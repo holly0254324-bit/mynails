@@ -1,7 +1,6 @@
 python-telegram-bot==21.0
 python-dotenv
 APScheduler
-
 google-api-python-client
 google-auth
 google-auth-httplib2
