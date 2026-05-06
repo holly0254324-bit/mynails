@@ -21,9 +21,9 @@ TIMEZONE = ZoneInfo("Europe/Vienna")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("Маникюр", callback_data="manicure")],
-        [InlineKeyboardButton("Педикюр", callback_data="pedicure")],
-        [InlineKeyboardButton("Маникюр + Педикюр", callback_data="combo")],
+        [InlineKeyboardButton("Манікюр", callback_data="Манікюр")],
+        [InlineKeyboardButton("Педикюр", callback_data="Педикюр")],
+        [InlineKeyboardButton("Манікюр + Педикюр", callback_data="Манікюр + Педикюр")],
     ]
 
     await update.message.reply_text(
@@ -34,7 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f" • Педикюр - 800 грн. без п'яток (2 години)\n"
         f" • Манікюр + педикюр - 1200 грн. (3 години)\n"
         f" • Дизайн нігтів – від 100 грн.\n\n"
-        f" • Виберіть послугу нижче, і я підберу вам зручний час ✨\n\n",
+        f" Виберіть послугу нижче, і я підберу вам зручний час ✨\n\n",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
         
@@ -103,17 +103,18 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await query.edit_message_text(
-        f"Запис підтверджений! 💅 Чекаю на вас за адресою: м. Київ, вул. Хрещатик, 116a\n\n"
-        f"Послуга: {service}\n"
-        f"Час: {time_str}\n" 
-        f"Дата: {start_time.strftime('%d.%m.%Y')}\n\n"
+        f"\033[1m✅ ЗАПИС ПІДТВЕРДЖЕНО! 💅✅\033[0m\n\n"
+        f"📍 Чекаю на вас за адресою: м. Київ, вул. Хрещатик, 116a\n\n"
+        f"📌 Послуга: {service}\n"
+        f"⏰ Час: {time_str}\n" 
+        f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n\n"
         f"✔️Якщо потрібно змінити час або послугу, просто напишіть мені знову.\n\n"
        
         f"✔️Якщо потрібно скасувати або перенести запис, будь ласка, зв'яжіться зі мною заздалегідь.\n\n"
 
         f"✔️Якщо у вас є питання або потрібна допомога, не соромтеся звертатися до мене в будь-який час. Я завжди готова допомогти вам з вашими записами та надати інформацію про послуги.\n\n"
       
-        f"До зустрічі! 🌸")
+        f"\033[1mДо зустрічі! 🌸\033[0m")
 
 
 def main():
@@ -124,7 +125,7 @@ def main():
     app.add_handler(
         CallbackQueryHandler(
             select_service,
-            pattern="^(manicure|pedicure|combo)$",
+            pattern="^(Манікюр|Педикюр|Манікюр + Педикюр)$",
         )
     )
 
