@@ -1,12 +1,22 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+)
+
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
     CallbackQueryHandler,
     ContextTypes,
+    MessageHandler,
+    filters,
 )
 
 from bot.config import BOT_TOKEN, SERVICE_DURATIONS
@@ -121,9 +131,43 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     time_str = query.data.replace("time_", "")
     service = context.user_data.get("service")
 
+    selected_date = context.user_data.get("selected_date")
+
+    context.user_data["selected_time"] = time_str
+
+    keyboard = [
+        [
+            KeyboardButton(
+                text="📱 Поділитися номером",
+                request_contact=True,
+            )
+        ]
+    ]
+
+    await query.message.reply_text(
+        "📱 Будь ласка, поділіться номером телефону:",
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard,
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        ),
+    )
+
+
+async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    contact = update.message.contact
+
+    phone_number = contact.phone_number
+
+    context.user_data["phone_number"] = phone_number
+
+    service = context.user_data.get("service")
+
     duration = SERVICE_DURATIONS[service]
 
     selected_date = context.user_data.get("selected_date")
+
+    time_str = context.user_data.get("selected_time")
 
     hour, minute = map(int, time_str.split(":"))
 
@@ -139,11 +183,12 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     create_event(
         start_time=start_time,
         duration_minutes=duration,
-        user_name=query.from_user.first_name,
+        user_name=update.effective_user.first_name,
         service_name=service,
+        phone_number=phone_number,
     )
 
-    await query.edit_message_text(
+    await update.message.reply_text(
         f"✅ ЗАПИС ПІДТВЕРДЖЕНО! 💅\n\n"
 
         f"📍 Чекаю на вас за адресою:\n"
@@ -151,13 +196,16 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         f"📌 Послуга: {service}\n"
         f"⏰ Час: {time_str}\n"
-        f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n\n"
+        f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n"
+        f"📱 Телефон: {phone_number}\n\n"
 
         f"✔️ Якщо потрібно змінити час або послугу — просто напишіть мені знову.\n\n"
 
         f"✔️ Якщо потрібно скасувати або перенести запис — будь ласка, повідомте заздалегідь.\n\n"
 
-        f"До зустрічі 🌸"
+        f"До зустрічі 🌸",
+
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
@@ -187,6 +235,13 @@ def main():
         )
     )
 
+    app.add_handler(
+        MessageHandler(
+            filters.CONTACT,
+            handle_contact,
+        )
+    )
+
     print("BOT STARTED")
 
     app.run_polling(drop_pending_updates=True)
@@ -194,3 +249,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
