@@ -3,16 +3,26 @@ from googleapiclient.discovery import build
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-SERVICE_ACCOUNT_FILE = 'service_account.json'
+import json
+import os
 
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE,
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+credentials_info = json.loads(
+    os.environ["GOOGLE_CREDENTIALS"]
+)
+
+credentials = service_account.Credentials.from_service_account_info(
+    credentials_info,
     scopes=SCOPES
 )
 
 service = build('calendar', 'v3', credentials=credentials)
 
-CALENDAR_ID = 'primary'
+CALENDAR_ID = 'primary'    
 
 
 from datetime import datetime, timedelta
