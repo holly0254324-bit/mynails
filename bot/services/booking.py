@@ -1,4 +1,53 @@
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from bot.config import (
+    WORK_START,
+    WORK_END,
+    SLOT_STEP_MINUTES,
+)
+
+TIMEZONE = ZoneInfo("Europe/Vienna")
+
+
+def generate_time_slots(date):
+    start = datetime(
+        date.year,
+        date.month,
+        date.day,
+        WORK_START,
+        0,
+        tzinfo=TIMEZONE,
+    )
+
+    end = datetime(
+        date.year,
+        date.month,
+        date.day,
+        WORK_END,
+        0,
+        tzinfo=TIMEZONE,
+    )
+
+    slots = []
+    current = start
+
+    while current < end:
+        slots.append(current)
+        current += timedelta(minutes=SLOT_STEP_MINUTES)
+
+    return slots
+
+
+def is_today(date):
+    now = datetime.now(TIMEZONE)
+    return date.date() == now.date()
+
+
+def filter_past_and_buffer(slots):
+    now = datetime.now(TIMEZONE)
+
+    valid = []
 
     for slot in slots:
         if slot <= now:
