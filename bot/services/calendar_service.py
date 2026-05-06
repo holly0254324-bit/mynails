@@ -1,4 +1,48 @@
 import os
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+SERVICE_ACCOUNT_FILE = '/etc/secrets/service_account.json'
+
+credentials = service_account.Credentials.from_service_account_file(
+    SERVICE_ACCOUNT_FILE,
+    scopes=SCOPES,
+)
+
+service = build('calendar', 'v3', credentials=credentials)
+
+CALENDAR_ID = os.getenv("CALENDAR_ID")
+
+TIMEZONE = ZoneInfo("Europe/Vienna")
+
+
+def get_events_for_day(date):
+    start = datetime(
+        date.year,
+        date.month,
+        date.day,
+        0,
+        0,
+        tzinfo=TIMEZONE,
+    )
+
+    end = start + timedelta(days=1)
+
+    events_result = service.events().list(
+        calendarId=CALENDAR_ID,
+        timeMin=start.isoformat(),
+        timeMax=end.isoformat(),
+        singleEvents=True,
+        orderBy='startTime',
+    ).execute()
+
+    return events_result.get('items', [])
+
 
 def get_busy_slots(date):
     events = get_events_for_day(date)
