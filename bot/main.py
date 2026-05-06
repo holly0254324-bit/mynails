@@ -27,10 +27,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text(
-        "Выберите услугу 💅",
+        f"Привіт 🌸\n"
+        f"Я віртуальний помічник Світлана і допоможу швидко записатися до майстра 💅\n"
+        f"Доступні послуги:\n"
+        f" • Манікюр - 600 грн. (1,5 години)\n"
+        f" • Педикюр - 800 грн. без п'яток (2 години)\n"
+        f" • Манікюр + педикюр - 1200 грн. (3 години)\n"
+        f" • Дизайн нігтів – від 100 грн.\n"
+        f" • Виберіть послугу нижче, і я підберу вам зручний час ✨\n",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
-
+        
 
 async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -51,7 +58,7 @@ async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not slots:
         await query.edit_message_text(
-            "Сегодня свободных слотов нет 😢"
+            "Сьогодні вільних слотів немає 😢"
         )
         return
 
@@ -61,7 +68,7 @@ async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await query.edit_message_text(
-        "Выберите время:",
+        "Виберіть час:",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -96,9 +103,9 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await query.edit_message_text(
-        f"Запись подтверждена 💅\n\n"
-        f"Услуга: {service}\n"
-        f"Время: {time_str}"
+        f"Запис підтверджений 💅\n\n"
+        f"Послуга: {service}\n"
+        f"Час: {time_str}"
     )
 
 
