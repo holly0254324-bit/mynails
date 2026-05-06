@@ -21,9 +21,9 @@ TIMEZONE = ZoneInfo("Europe/Vienna")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
-        [InlineKeyboardButton("Манікюр", callback_data="Манікюр")],
-        [InlineKeyboardButton("Педикюр", callback_data="Педикюр")],
-        [InlineKeyboardButton("Манікюр + Педикюр", callback_data="Манікюр + Педикюр")],
+        [InlineKeyboardButton("Manicure", callback_data="Manicure")],
+        [InlineKeyboardButton("Pedicure", callback_data="Pedicure")],
+        [InlineKeyboardButton("Manicure + Pedicure", callback_data="Manicure + Pedicure")],
     ]
 
     await update.message.reply_text(
@@ -125,7 +125,7 @@ def main():
     app.add_handler(
         CallbackQueryHandler(
             select_service,
-            pattern="^(Манікюр|Педикюр|Манікюр + Педикюр)$",
+            pattern="^(Manicure|Pedicure|Manicure + Pedicure)$",
         )
     )
 
