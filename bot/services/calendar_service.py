@@ -14,7 +14,6 @@ service = build('calendar', 'v3', credentials=credentials)
 
 CALENDAR_ID = 'primary'
 
-//ПОЛУЧЕНИЕ СОБІТИЙ//
 
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -36,7 +35,7 @@ def get_events_for_day(date):
 
     return events_result.get('items', [])
 
-// +++++++Конвертация в busy slots ++++++//
+
 def get_busy_slots(date):
     events = get_events_for_day(date)
 
