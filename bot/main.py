@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -28,16 +28,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
         f"Вітаю 🌸\n"
-        f"Я віртуальний помічник 👩‍🦰 і допоможу швидко записатися до майстра 💅\n"
+        f"Я віртуальний помічник 👩‍🦰 і допоможу швидко записатися до майстра 💅\n\n"
+
         f"Доступні послуги:\n"
         f" • Манікюр - 600 грн. (1,5 години)\n"
         f" • Педикюр - 800 грн. без п'яток (2 години)\n"
         f" • Манікюр + педикюр - 1200 грн. (3 години)\n"
         f" • Дизайн нігтів – від 100 грн.\n\n"
-        f" Виберіть послугу нижче, і я підберу вам зручний час ✨\n\n",
+
+        f"Виберіть послугу нижче, і я підберу вам зручний час ✨",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
-        
+
 
 async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -46,19 +48,58 @@ async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     service = query.data
     context.user_data["service"] = service
 
-    today = datetime.now(TIMEZONE)
+    today = datetime.now(TIMEZONE).date()
 
-    busy_slots = get_busy_slots(today)
+    keyboard = []
+
+    for i in range(14):
+        date = today + timedelta(days=i)
+
+        formatted_date = date.strftime("%d.%m")
+
+        if i == 0:
+            text = f"Сьогодні ({formatted_date})"
+        elif i == 1:
+            text = f"Завтра ({formatted_date})"
+        else:
+            text = formatted_date
+
+        keyboard.append([
+            InlineKeyboardButton(
+                text,
+                callback_data=f"date_{date.isoformat()}"
+            )
+        ])
+
+    await query.edit_message_text(
+        "📅 Оберіть дату:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+async def select_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    date_str = query.data.replace("date_", "")
+
+    selected_date = datetime.fromisoformat(date_str)
+
+    context.user_data["selected_date"] = selected_date
+
+    service = context.user_data.get("service")
+
+    busy_slots = get_busy_slots(selected_date)
 
     slots = get_available_slots(
-        today,
+        selected_date,
         SERVICE_DURATIONS[service],
         existing_events=busy_slots,
     )
 
     if not slots:
         await query.edit_message_text(
-            "Сьогодні вільних слотів немає 😢"
+            "😢 На цю дату вільних слотів немає"
         )
         return
 
@@ -68,7 +109,7 @@ async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await query.edit_message_text(
-        "Виберіть час:",
+        f"⏰ Оберіть час на {selected_date.strftime('%d.%m.%Y')}:",
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
 
@@ -82,14 +123,14 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     duration = SERVICE_DURATIONS[service]
 
-    now = datetime.now(TIMEZONE)
+    selected_date = context.user_data.get("selected_date")
 
     hour, minute = map(int, time_str.split(":"))
 
     start_time = datetime(
-        now.year,
-        now.month,
-        now.day,
+        selected_date.year,
+        selected_date.month,
+        selected_date.day,
         hour,
         minute,
         tzinfo=TIMEZONE,
@@ -103,18 +144,21 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     await query.edit_message_text(
-        f"\033[1m✅ ЗАПИС ПІДТВЕРДЖЕНО! 💅✅\033[0m\n\n"
-        f"📍 Чекаю на вас за адресою: м. Київ, вул. Хрещатик, 116a\n\n"
-        f"📌 Послуга: {service}\n"
-        f"⏰ Час: {time_str}\n" 
-        f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n\n"
-        f"✔️Якщо потрібно змінити час або послугу, просто напишіть мені знову.\n\n"
-       
-        f"✔️Якщо потрібно скасувати або перенести запис, будь ласка, зв'яжіться зі мною заздалегідь.\n\n"
+        f"✅ ЗАПИС ПІДТВЕРДЖЕНО! 💅\n\n"
 
-        f"✔️Якщо у вас є питання або потрібна допомога, не соромтеся звертатися до мене в будь-який час. Я завжди готова допомогти вам з вашими записами та надати інформацію про послуги.\n\n"
-      
-        f"\033[1mДо зустрічі! 🌸\033[0m")
+        f"📍 Чекаю на вас за адресою:\n"
+        f"м. Київ, вул. Хрещатик, 116a\n\n"
+
+        f"📌 Послуга: {service}\n"
+        f"⏰ Час: {time_str}\n"
+        f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n\n"
+
+        f"✔️ Якщо потрібно змінити час або послугу — просто напишіть мені знову.\n\n"
+
+        f"✔️ Якщо потрібно скасувати або перенести запис — будь ласка, повідомте заздалегідь.\n\n"
+
+        f"До зустрічі 🌸"
+    )
 
 
 def main():
@@ -126,6 +170,13 @@ def main():
         CallbackQueryHandler(
             select_service,
             pattern="^(manicure|pedicure|manicure_pedicure)$",
+        )
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(
+            select_date,
+            pattern="^date_",
         )
     )
 
