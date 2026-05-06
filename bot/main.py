@@ -9,6 +9,7 @@ from telegram.ext import (
 from datetime import datetime
 from config import BOT_TOKEN, SERVICE_DURATIONS
 from services.booking import get_available_slots
+from services.calendar_service import get_busy_slots
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -43,6 +44,14 @@ async def select_service(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("Сегодня уже всё занято 😢")
         return
 
+    busy_slots = get_busy_slots(today)
+
+    slots = get_available_slots(
+        today,
+        SERVICE_DURATIONS[service],
+        existing_events=busy_slots
+    )
+
     keyboard = [
         [InlineKeyboardButton(slot, callback_data=f"time_{slot}")]
         for slot in slots[:10]  # ограничим, чтобы не взорвать интерфейс
@@ -75,6 +84,27 @@ def main():
 
     app.run_polling()
 
+def create_event(start_time, duration_minutes, user_name, service_name):
+    end_time = start_time + timedelta(minutes=duration_minutes)
+
+    event = {
+        'summary': f'{service_name} - {user_name}',
+        'start': {
+            'dateTime': start_time.isoformat(),
+            'timeZone': 'Europe/Vienna',
+        },
+        'end': {
+            'dateTime': end_time.isoformat(),
+            'timeZone': 'Europe/Vienna',
+        },
+    }
+
+    created_event = service.events().insert(
+        calendarId=CALENDAR_ID,
+        body=event
+    ).execute()
+
+    return created_event
 
 if __name__ == "__main__":
     main()
