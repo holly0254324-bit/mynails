@@ -275,17 +275,17 @@ async def finalize_booking(source, context):
         f"💬 Коментар: {comment}\n\n"
 
         f"До зустрічі 🌸"    )
-    
-    if hasattr(source, "callback_query"):
+    if source.callback_query:
         await source.callback_query.message.reply_text(
         message_text,
-        reply_markup=InlineKeyboardMarkup(keyboard),        
-        )
-    else:
+        reply_markup=InlineKeyboardMarkup(keyboard),    )
+    elif source.message:
         await source.message.reply_text(
         message_text,
         reply_markup=InlineKeyboardMarkup(keyboard),
     )
+
+
 
 
 async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE):
