@@ -110,3 +110,5 @@ def delete_event(event_id):
         calendarId=CALENDAR_ID,
         eventId=event_id,
     ).execute()
+
+
