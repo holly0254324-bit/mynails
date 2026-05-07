@@ -24,6 +24,7 @@ from bot.services.booking import get_available_slots
 from bot.services.calendar_service import (
     get_busy_slots,
     create_event,
+    delete_event,
 )
 
 TIMEZONE = ZoneInfo("Europe/Vienna")
@@ -235,7 +236,7 @@ async def finalize_booking(source, context):
         tzinfo=TIMEZONE,
     )
 
-    create_event(
+    event = create_event(
         start_time=start_time,
         duration_minutes=duration,
         user_name=source.effective_user.first_name,
@@ -244,11 +245,19 @@ async def finalize_booking(source, context):
         comment=comment,
     )
 
+    event_id = event.get("id")
+
     keyboard = [
         [
             InlineKeyboardButton(
                 "💬 Написати майстру",
                 url=f"https://t.me/{MASTER_USERNAME}"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "❌ Скасувати запис",
+                callback_data=f"cancel_{event_id}"
             )
         ]
     ]
@@ -278,6 +287,19 @@ async def finalize_booking(source, context):
             message_text,
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+
+
+async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    event_id = query.data.replace("cancel_", "")
+
+    delete_event(event_id)
+
+    await query.edit_message_text(
+        "❌ Ваш запис успішно скасовано"
+    )
 
 
 def main():
@@ -324,6 +346,13 @@ def main():
         CallbackQueryHandler(
             skip_comment,
             pattern="^skip_comment$",
+        )
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(
+            cancel_booking,
+            pattern="^cancel_",
         )
     )
 
