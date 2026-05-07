@@ -13,5 +13,5 @@ SLOT_STEP_MINUTES = 30
 SERVICE_DURATIONS = {
     "manicure": 90,
     "pedicure": 90,
-    "combo": 180,
+    "manicure_pedicure": 180,
 }
