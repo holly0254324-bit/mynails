@@ -274,19 +274,18 @@ async def finalize_booking(source, context):
         f"📱 Телефон: {phone_number}\n"
         f"💬 Коментар: {comment}\n\n"
 
-        f"До зустрічі 🌸"
-    )
-
-    if hasattr(source, "message"):
-        await source.message.reply_text(
-            message_text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
+        f"До зустрічі 🌸"    )
+    
+    if hasattr(source, "callback_query"):
+        await source.callback_query.message.reply_text(
+        message_text,
+        reply_markup=InlineKeyboardMarkup(keyboard),        
         )
     else:
-        await source.reply_text(
-            message_text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+        await source.message.reply_text(
+        message_text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
 
 
 async def cancel_booking(update: Update, context: ContextTypes.DEFAULT_TYPE):
