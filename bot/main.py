@@ -28,6 +28,8 @@ from bot.services.calendar_service import (
 
 TIMEZONE = ZoneInfo("Europe/Vienna")
 
+MASTER_USERNAME = "ledi_win"
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -129,9 +131,6 @@ async def select_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     time_str = query.data.replace("time_", "")
-    service = context.user_data.get("service")
-
-    selected_date = context.user_data.get("selected_date")
 
     context.user_data["selected_time"] = time_str
 
@@ -161,6 +160,58 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["phone_number"] = phone_number
 
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "✍️ Додати коментар",
+                callback_data="add_comment"
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                "⏭ Пропустити",
+                callback_data="skip_comment"
+            )
+        ]
+    ]
+
+    await update.message.reply_text(
+        "💬 Бажаєте залишити коментар для майстра?",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+async def add_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["waiting_for_comment"] = True
+
+    await query.message.reply_text(
+        "✍️ Напишіть ваш коментар одним повідомленням:"
+    )
+
+
+async def save_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.user_data.get("waiting_for_comment"):
+        return
+
+    context.user_data["comment"] = update.message.text
+    context.user_data["waiting_for_comment"] = False
+
+    await finalize_booking(update, context)
+
+
+async def skip_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["comment"] = "Без коментаря"
+
+    await finalize_booking(query, context)
+
+
+async def finalize_booking(source, context):
     service = context.user_data.get("service")
 
     duration = SERVICE_DURATIONS[service]
@@ -168,6 +219,10 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     selected_date = context.user_data.get("selected_date")
 
     time_str = context.user_data.get("selected_time")
+
+    phone_number = context.user_data.get("phone_number")
+
+    comment = context.user_data.get("comment", "Без коментаря")
 
     hour, minute = map(int, time_str.split(":"))
 
@@ -183,12 +238,22 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     create_event(
         start_time=start_time,
         duration_minutes=duration,
-        user_name=update.effective_user.first_name,
+        user_name=source.effective_user.first_name,
         service_name=service,
         phone_number=phone_number,
+        comment=comment,
     )
 
-    await update.message.reply_text(
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                "💬 Написати майстру",
+                url=f"https://t.me/{MASTER_USERNAME}"
+            )
+        ]
+    ]
+
+    message_text = (
         f"✅ ЗАПИС ПІДТВЕРДЖЕНО! 💅\n\n"
 
         f"📍 Чекаю на вас за адресою:\n"
@@ -197,16 +262,22 @@ async def handle_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"📌 Послуга: {service}\n"
         f"⏰ Час: {time_str}\n"
         f"🗓 Дата: {start_time.strftime('%d.%m.%Y')}\n"
-        f"📱 Телефон: {phone_number}\n\n"
+        f"📱 Телефон: {phone_number}\n"
+        f"💬 Коментар: {comment}\n\n"
 
-        f"✔️ Якщо потрібно змінити час або послугу — просто напишіть мені знову.\n\n"
-
-        f"✔️ Якщо потрібно скасувати або перенести запис — будь ласка, повідомте заздалегідь.\n\n"
-
-        f"До зустрічі 🌸",
-
-        reply_markup=ReplyKeyboardRemove(),
+        f"До зустрічі 🌸"
     )
+
+    if hasattr(source, "message"):
+        await source.message.reply_text(
+            message_text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        await source.reply_text(
+            message_text,
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
 
 
 def main():
@@ -239,6 +310,27 @@ def main():
         MessageHandler(
             filters.CONTACT,
             handle_contact,
+        )
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(
+            add_comment,
+            pattern="^add_comment$",
+        )
+    )
+
+    app.add_handler(
+        CallbackQueryHandler(
+            skip_comment,
+            pattern="^skip_comment$",
+        )
+    )
+
+    app.add_handler(
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            save_comment,
         )
     )
 
