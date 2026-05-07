@@ -209,7 +209,7 @@ async def skip_comment(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     context.user_data["comment"] = "Без коментаря"
 
-    await finalize_booking(query, context)
+    await finalize_booking(update, context)
 
 
 async def finalize_booking(source, context):
