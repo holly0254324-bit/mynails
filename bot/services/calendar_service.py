@@ -73,6 +73,7 @@ def create_event(
     user_name,
     service_name,
     phone_number=None,
+    comment=None,
 ):
     end_time = start_time + timedelta(
         minutes=duration_minutes
@@ -80,7 +81,8 @@ def create_event(
 
     description = (
         f"Клієнт: {user_name}\n"
-        f"Телефон: {phone_number}"
+        f"Телефон: {phone_number}\n"
+        f"Коментар: {comment}"
     )
 
     event = {
@@ -95,14 +97,6 @@ def create_event(
             'timeZone': 'Europe/Vienna',
         },
     }
-
-    created_event = service.events().insert(
-        calendarId=CALENDAR_ID,
-        body=event,
-    ).execute()
-
-    return created_event
-
 
     created_event = service.events().insert(
         calendarId=CALENDAR_ID,
